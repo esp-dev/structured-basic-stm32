@@ -14,22 +14,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Check out the STM32 port
+      - name: Check out the STM32 port and its BASIC submodule
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
-      - name: Read the BASIC submodule revision
-        id: basic
-        run: |
-          revision=$(git rev-parse --verify HEAD:basic)
-          printf 'revision=%s\n' "$revision" >> "$GITHUB_OUTPUT"
-      - name: Check out the pinned BASIC submodule
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/structured-basic
-          ref: ${{ steps.basic.outputs.revision }}
-          path: basic
-          ssh-key: ${{ secrets.BASIC_CORE_DEPLOY_KEY }}
+          submodules: recursive
           persist-credentials: false
       - name: Verify the pinned BASIC revision
         run: test "$(git -C basic rev-parse HEAD)" = "$(git rev-parse HEAD:basic)"

@@ -96,10 +96,8 @@ to the sibling repository under the same GitHub owner. For an explicitly
 trusted local clone, Git may require
 `git -c protocol.file.allow=always submodule update --init`.
 
-When the core repository is private, the build workflow needs the
-`BASIC_CORE_DEPLOY_KEY` Actions secret in the port repository. The matching
-public deploy key needs read-only access to the core repository. The workflow
-uses the key to check out the commit recorded in the `basic/` submodule.
+The GitHub Actions workflow fetches the public `basic/` submodule and verifies
+that its checked-out revision matches the commit recorded by the port.
 
 Use CMake, Ninja, Arm GNU Toolchain and the installed STM32CubeF4 v1.27.1
 SDK. HAL, CMSIS and FatFs come from that SDK. The MIDI project supplies the
