@@ -1,0 +1,16 @@
+REM Indexed STRING and SINGLE arrays
+DIM LABELS$(3)
+DIM TEMPS(3) AS SINGLE
+LABELS$(0) = "morning"
+LABELS$(1) = "noon"
+LABELS$(2) = "evening"
+TEMPS(0) = 18.0
+TEMPS(1) = 23.5
+TEMPS(2) = 20.5
+DIM TOTAL AS SINGLE
+FOR I = 0 TO 2
+    PRINT UCASE$(LABELS$(I)); ": "; TEMPS(I); " C"
+    TOTAL = TOTAL + TEMPS(I)
+NEXT I
+PRINT "Average: "; TOTAL / 3; " C"
+END

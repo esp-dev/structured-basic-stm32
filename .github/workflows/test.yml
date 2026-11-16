@@ -1,0 +1,27 @@
+name: Console tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  console:
+    name: Native console / ASan and UBSan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: >-
+          cmake -S . -B build/host -G Ninja -DCMAKE_C_COMPILER=clang
+          "-DCMAKE_C_FLAGS=-g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all"
+      - name: Build
+        run: cmake --build build/host
+      - name: Test
+        run: ctest --test-dir build/host --output-on-failure

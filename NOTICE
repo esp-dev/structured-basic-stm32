@@ -1,0 +1,5 @@
+Structured BASIC for STM32
+Copyright 2026 the Structured BASIC contributors.
+
+The STM32 firmware build links separately distributed third-party components
+from STM32CubeF4, as described in THIRD_PARTY.md.
