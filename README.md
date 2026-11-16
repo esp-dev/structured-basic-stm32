@@ -96,7 +96,7 @@ to the sibling repository under the same GitHub owner. For an explicitly
 trusted local clone, Git may require
 `git -c protocol.file.allow=always submodule update --init`.
 
-When the core repository is private, the console workflow needs the
+When the core repository is private, the build workflow needs the
 `BASIC_CORE_DEPLOY_KEY` Actions secret in the port repository. The matching
 public deploy key needs read-only access to the core repository. The workflow
 uses the key to check out the commit recorded in the `basic/` submodule.
@@ -117,9 +117,15 @@ ctest --test-dir build/host --output-on-failure
 ./tests/com-smoke.ps1 -Port COM25 -CheckCard
 ```
 
-The ARM build writes ELF, HEX, BIN and a linker map. The serial script
-tests real firmware. `-CheckCardWrite` creates, updates, reads and removes
-one unique scratch file. Close other serial terminals before running it.
+The ARM build writes ELF, HEX, BIN and a linker map. The GitHub Actions
+workflow runs the native console tests with ASan/UBSan, then builds the
+16 KiB firmware with STM32CubeF4 v1.27.1. Its `sbasic-nucleo-f412zg`
+artifact contains `sbasic-nucleo.hex`, `sbasic-nucleo.bin` and the
+license notices. For a raw BIN, the flash base address is `0x08000000`.
+
+The serial script tests real firmware. `-CheckCardWrite` creates, updates,
+reads and removes one unique scratch file. Close other serial terminals
+before running it.
 
 To flash with STM32CubeProgrammer, connect the board over ST-LINK/SWD and
 write and verify `sbasic-nucleo.hex`. The HEX already contains the target

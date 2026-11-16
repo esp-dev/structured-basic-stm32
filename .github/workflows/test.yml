@@ -1,4 +1,4 @@
-name: Console tests
+name: Console tests and Nucleo firmware
 
 on:
   push:
@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   console:
-    name: Native console / ASan and UBSan
-    runs-on: ubuntu-latest
+    name: Sanitized console and NUCLEO-F412ZG firmware
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out the STM32 port
@@ -33,11 +33,61 @@ jobs:
           persist-credentials: false
       - name: Verify the pinned BASIC revision
         run: test "$(git -C basic rev-parse HEAD)" = "$(git rev-parse HEAD:basic)"
-      - name: Configure
+      - name: Configure the native console
         run: >-
           cmake -S . -B build/host -G Ninja -DCMAKE_C_COMPILER=clang
           "-DCMAKE_C_FLAGS=-g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all"
-      - name: Build
+      - name: Build the native console
         run: cmake --build build/host
-      - name: Test
+      - name: Test the native console
         run: ctest --test-dir build/host --output-on-failure
+      - name: Install the ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y gcc-arm-none-eabi libnewlib-arm-none-eabi
+          arm-none-eabi-gcc --version
+      - name: Check out STM32CubeF4 v1.27.1
+        uses: actions/checkout@v4
+        with:
+          repository: STMicroelectronics/STM32CubeF4
+          ref: 52757b5e33259a088509a777a9e3a5b971194c7d # v1.27.1
+          path: build/stm32cubef4
+          persist-credentials: false
+          sparse-checkout: |
+            Drivers/CMSIS/Include
+            Drivers/CMSIS/Device/ST/STM32F4xx
+            Drivers/STM32F4xx_HAL_Driver
+            Middlewares/Third_Party/FatFS
+      - name: Configure the NUCLEO-F412ZG firmware
+        run: >-
+          cmake -S . -B build/arm -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=platform/stm32/arm-gcc.cmake
+          "-DSTM32CUBE_F4=$GITHUB_WORKSPACE/build/stm32cubef4"
+      - name: Build the NUCLEO-F412ZG firmware
+        run: cmake --build build/arm --target sbasic-nucleo
+      - name: Verify firmware files and collect notices
+        run: |
+          test -s build/arm/sbasic-nucleo.hex
+          test -s build/arm/sbasic-nucleo.bin
+          sha256sum build/arm/sbasic-nucleo.{hex,bin}
+          sdk=build/stm32cubef4
+          notices=build/arm/licenses
+          mkdir -p "$notices"/{port,basic,stm32cubef4,toolchain}
+          cp LICENSE NOTICE THIRD_PARTY.md "$notices/port/"
+          cp basic/LICENSE basic/NOTICE "$notices/basic/"
+          cp "$sdk/LICENSE.md" "$notices/stm32cubef4/"
+          cp "$sdk/Drivers/CMSIS/LICENSE.txt" "$notices/stm32cubef4/CMSIS.txt"
+          cp "$sdk/Drivers/CMSIS/Device/ST/STM32F4xx/License.md" "$notices/stm32cubef4/STM32F4-device.md"
+          cp "$sdk/Drivers/STM32F4xx_HAL_Driver/LICENSE.md" "$notices/stm32cubef4/HAL.md"
+          cp "$sdk/Middlewares/Third_Party/FatFS/st_license.txt" "$notices/stm32cubef4/FatFs-ST.txt"
+          cp /usr/share/doc/gcc-arm-none-eabi/copyright "$notices/toolchain/GCC.txt"
+          cp /usr/share/doc/libnewlib-arm-none-eabi/copyright "$notices/toolchain/Newlib.txt"
+      - name: Upload the NUCLEO-F412ZG firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbasic-nucleo-f412zg
+          path: |
+            build/arm/sbasic-nucleo.hex
+            build/arm/sbasic-nucleo.bin
+            build/arm/licenses/
+          if-no-files-found: error
